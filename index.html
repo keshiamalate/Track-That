@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>EnvelopePH</title>
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="EnvelopePH" />
+<meta name="theme-color" content="#6C5CE7" />
+<link rel="manifest" id="pwa-manifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<script>
+// Inline manifest so it works even if manifest.json fails to load
+const manifestData = {
+  name: "EnvelopePH",
+  short_name: "EnvelopePH",
+  description: "Envelope budgeting app for Filipinos",
+  start_url: "./",
+  scope: "./",
+  display: "standalone",
+  orientation: "portrait",
+  background_color: "#ffffff",
+  theme_color: "#6C5CE7",
+  icons: [
+    { src: "https://ui-avatars.com/api/?name=E&background=6C5CE7&color=fff&size=192&bold=true&font-size=0.6&rounded=false", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+    { src: "https://ui-avatars.com/api/?name=E&background=6C5CE7&color=fff&size=512&bold=true&font-size=0.6&rounded=false", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type:'application/manifest+json'});
+document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<style>
+  :root {
+    --purple: #6C5CE7;
+    --purple-light: #ede9fb;
+    --green: #0b7a4e;
+    --green-light: #e6f9f0;
+    --yellow: #ef9f27;
+    --yellow-light: #fff8e1;
+    --red: #e24b4a;
+    --red-light: #fce8e8;
+    --text: #111;
+    --subtext: #999;
+    --border: #f0f0f0;
+    --bg: #fafafa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  body { background: #6C5CE7; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; }
+  @media (max-width: 430px) {
+    body { background: #fff; padding: 0; align-items: stretch; }
+    .phone { width: 100% !important; height: 100vh !important; height: 100dvh !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
+  }
+  .phone { width: 375px; background: #fff; border-radius: 40px; border: 10px solid #111; box-shadow: 0 24px 64px rgba(0,0,0,0.18); overflow: hidden; display: flex; flex-direction: column; height: 720px; }
+  .screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .screen.active { display: flex; }
+  .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .btn-primary { background: var(--purple); color: #fff; border: none; border-radius: 24px; padding: 14px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .15s; }
+  .btn-primary:active { background: #5a4bd1; }
+  .btn-danger { background: var(--red-light); color: var(--red); border: none; border-radius: 24px; padding: 14px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .nav-tabs { display: flex; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); border-top: 0.5px solid #eee; background: #fff; flex-shrink: 0; }
+  .nav-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #aaa; cursor: pointer; padding: 0 8px; }
+  .nav-tab.active { color: var(--purple); }
+  .nav-tab i { font-size: 24px; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 500; cursor: pointer; border: none; white-space: nowrap; }
+  .tag-purple { background: var(--purple); color: #fff; }
+  .tag-outline { background: #fff; color: #555; border: 0.5px solid #ddd; }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-yellow { background: var(--yellow-light); color: #8a6000; }
+  .tag-red { background: var(--red-light); color: #b02020; }
+  .env-card { padding: 14px 16px; border-bottom: 0.5px solid var(--border); cursor: pointer; transition: background .1s; }
+  .env-card:active { background: #fafafa; }
+  .pbar { height: 4px; background: #f0f0f0; border-radius: 2px; margin: 8px 0 6px; }
+  .pfill { height: 4px; border-radius: 2px; transition: width .4s; }
+  input[type=text], input[type=email], input[type=password], input[type=number] { width: 100%; border: none; border-bottom: 1px solid #e0e0e0; padding: 12px 4px; font-size: 15px; outline: none; background: transparent; color: var(--text); display: block; }
+  input::placeholder { color: #bbb; }
+  select { width: 100%; border: none; border-bottom: 1px solid #e0e0e0; padding: 12px 4px; font-size: 15px; outline: none; background: transparent; color: var(--text); appearance: none; }
+  .srow { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .srow:active { background: #fafafa; }
+  .link { color: var(--purple); cursor: pointer; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .page-header { display: flex; align-items: center; gap: 12px; padding: 18px 16px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 32px; text-align: center; gap: 12px; }
+  .empty-state i { font-size: 48px; color: #ddd; }
+  .empty-state p { font-size: 14px; color: #aaa; line-height: 1.6; }
+  .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 24px 24px 0 0; padding: 24px 20px 32px; width: 100%; max-width: 375px; }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+  #install-banner { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 12px 20px; border-radius: 14px; font-size: 13px; z-index: 9999; align-items: center; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); width: calc(100% - 40px); max-width: 355px; }
+  #install-banner.show { display: flex; }
+  #install-banner button { background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+  #install-banner .close-btn { background: none; padding: 0; color: #aaa; font-size: 18px; margin-left: auto; }
+  .faq-item { border-bottom: 0.5px solid var(--border); }
+  .faq-q { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .faq-a { display: none; padding: 0 16px 14px; font-size: 12px; color: #777; line-height: 1.6; }
+  .faq-a.open { display: block; }
+</style>
+</head>
+<body>
+
+<div id="install-banner">
+  <i class="ti ti-download" style="font-size:20px;color:var(--purple);flex-shrink:0;"></i>
+  <span>Install EnvelopePH on your phone</span>
+  <button id="install-btn">Install</button>
+  <button class="close-btn" onclick="document.getElementById('install-banner').classList.remove('show')">×</button>
+</div>
+
+<!-- ADD TRANSACTION MODAL -->
+<div class="modal-overlay" id="modal-tx">
+  <div class="modal">
+    <h3>Add Transaction</h3>
+    <input id="tx-desc" type="text" placeholder="Description (e.g. SM groceries)" style="margin-bottom:16px;" />
+    <input id="tx-amount" type="number" placeholder="Amount (₱)" min="1" style="margin-bottom:24px;" />
+    <button class="btn-primary" onclick="saveTransaction()">Add Transaction</button>
+    <button style="margin-top:10px;background:none;border:none;width:100%;padding:12px;font-size:14px;color:#999;cursor:pointer;" onclick="closeModal('modal-tx')">Cancel</button>
+  </div>
+</div>
+
+<!-- DELETE ENVELOPE MODAL -->
+<div class="modal-overlay" id="modal-del">
+  <div class="modal">
+    <h3>Delete Envelope?</h3>
+    <p style="font-size:13px;color:#777;margin-bottom:20px;">All transactions inside will also be deleted. This cannot be undone.</p>
+    <button class="btn-danger" onclick="confirmDeleteEnvelope()">Yes, Delete</button>
+    <button style="margin-top:10px;background:none;border:none;width:100%;padding:12px;font-size:14px;color:#999;cursor:pointer;" onclick="closeModal('modal-del')">Cancel</button>
+  </div>
+</div>
+
+<div class="phone">
+
+  <!-- LOGIN -->
+  <div class="screen active" id="s-login">
+    <div class="scroll-area" style="padding:40px 28px 28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px;">
+        <div style="width:36px;height:36px;background:var(--purple);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="ti ti-wallet" style="color:#fff;font-size:20px;"></i></div>
+        <span style="font-size:18px;font-weight:600;">EnvelopePH</span>
+      </div>
+      <p style="font-size:28px;font-weight:600;margin-bottom:6px;">Welcome back 👋</p>
+      <p style="font-size:14px;color:var(--subtext);margin-bottom:36px;">Sign in to manage your envelopes</p>
+      <input id="login-email" type="email" placeholder="Email address" style="margin-bottom:20px;" />
+      <input id="login-password" type="password" placeholder="Password" style="margin-bottom:32px;" />
+      <button class="btn-primary" onclick="signIn()">Sign In</button>
+      <p style="text-align:center;font-size:13px;color:var(--subtext);margin-top:20px;">Don't have an account? <span class="link" onclick="go('signup')">Sign up</span></p>
+    </div>
+  </div>
+
+  <!-- SIGN UP -->
+  <div class="screen" id="s-signup">
+    <div class="scroll-area" style="padding:40px 28px 28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px;">
+        <div style="width:36px;height:36px;background:var(--purple);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="ti ti-wallet" style="color:#fff;font-size:20px;"></i></div>
+        <span style="font-size:18px;font-weight:600;">EnvelopePH</span>
+      </div>
+      <p style="font-size:26px;font-weight:600;margin-bottom:6px;">Create your account</p>
+      <p style="font-size:14px;color:var(--subtext);margin-bottom:32px;">Start budgeting with envelopes today</p>
+      <input id="signup-name" type="text" placeholder="Full name" style="margin-bottom:18px;" />
+      <input id="signup-email" type="email" placeholder="Email address" style="margin-bottom:18px;" />
+      <input id="signup-password" type="password" placeholder="Password" style="margin-bottom:18px;" />
+      <input id="signup-confirm" type="password" placeholder="Confirm password" style="margin-bottom:32px;" />
+      <button class="btn-primary" onclick="signUp()">Create Account</button>
+      <p style="text-align:center;font-size:13px;color:var(--subtext);margin-top:20px;">Already have an account? <span class="link" onclick="go('login')">Sign in</span></p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="s-dashboard">
+    <div class="scroll-area">
+      <div style="padding:18px 16px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <p id="dash-greeting" style="font-size:13px;color:var(--subtext);">Good afternoon,</p>
+            <p style="font-size:20px;font-weight:600;"><span id="dash-name">there</span> 👋</p>
+            <p id="dash-month" style="font-size:12px;color:var(--purple);">● —</p>
+          </div>
+          <div onclick="go('profile')" style="width:44px;height:44px;border-radius:50%;background:var(--purple-light);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <i class="ti ti-user" style="font-size:22px;color:var(--purple);"></i>
+          </div>
+        </div>
+        <!-- Overview card -->
+        <div style="background:var(--purple);border-radius:18px;padding:20px;margin-bottom:18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:13px;color:rgba(255,255,255,0.8);">Monthly Overview</span>
+            <span id="dash-pct" style="font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:3px 10px;border-radius:10px;">0% used</span>
+          </div>
+          <p id="dash-remaining" style="font-size:34px;font-weight:600;color:#fff;">₱0</p>
+          <p style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px;">remaining</p>
+          <div style="background:rgba(255,255,255,0.3);height:4px;border-radius:2px;margin-bottom:14px;">
+            <div id="dash-bar" style="background:#fff;height:4px;border-radius:2px;width:0%;transition:width .4s;"></div>
+          </div>
+          <div style="display:flex;gap:28px;">
+            <div><p style="font-size:11px;color:rgba(255,255,255,0.7);">Budgeted</p><p id="dash-budgeted" style="font-size:15px;color:#fff;font-weight:500;">₱0</p></div>
+            <div><p style="font-size:11px;color:rgba(255,255,255,0.7);">Spent</p><p id="dash-spent" style="font-size:15px;color:#fff;font-weight:500;">₱0</p></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <p style="font-size:15px;font-weight:600;">My Envelopes</p>
+          <span class="link" style="font-size:12px;" onclick="go('envelopes')">See all</span>
+        </div>
+      </div>
+      <div id="dash-envlist"></div>
+      <div style="padding:16px;">
+        <button class="btn-primary" onclick="go('newenvelope')"><i class="ti ti-plus"></i> Add Envelope</button>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-tab" onclick="go('envelopes')"><i class="ti ti-folders"></i>Envelopes</div>
+      <div class="nav-tab" onclick="go('profile')"><i class="ti ti-user"></i>Profile</div>
+    </div>
+  </div>
+
+  <!-- ENVELOPES LIST -->
+  <div class="screen" id="s-envelopes">
+    <div class="scroll-area">
+      <div style="padding:18px 16px 10px;">
+        <p style="font-size:16px;font-weight:600;margin-bottom:14px;">My Envelopes</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+          <button class="tag tag-purple" id="f-all" onclick="filterEnv('all')">All</button>
+          <button class="tag tag-outline" id="f-ontrack" onclick="filterEnv('ontrack')">On Track</button>
+          <button class="tag tag-outline" id="f-caution" onclick="filterEnv('caution')">Caution</button>
+          <button class="tag tag-outline" id="f-overspent" onclick="filterEnv('overspent')">Overspent</button>
+        </div>
+      </div>
+      <div id="envlist"></div>
+      <div style="padding:16px;">
+        <button class="btn-primary" onclick="go('newenvelope')"><i class="ti ti-plus"></i> Add Envelope</button>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-tab active" onclick="go('envelopes')"><i class="ti ti-folders"></i>Envelopes</div>
+      <div class="nav-tab" onclick="go('profile')"><i class="ti ti-user"></i>Profile</div>
+    </div>
+  </div>
+
+  <!-- NEW ENVELOPE -->
+  <div class="screen" id="s-newenvelope">
+    <div class="scroll-area" style="padding:18px 16px 28px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+        <i class="ti ti-arrow-left" style="font-size:22px;cursor:pointer;" onclick="go('envelopes')"></i>
+        <p style="font-size:16px;font-weight:600;">New Envelope</p>
+      </div>
+      <p style="font-size:13px;color:var(--subtext);margin-bottom:22px;">Set a budget for a spending category</p>
+      <input id="env-name" type="text" placeholder="Envelope name (e.g. Groceries)" style="margin-bottom:18px;" />
+      <input id="env-budget" type="number" placeholder="Monthly budget (₱)" min="1" style="margin-bottom:26px;" />
+      <p style="font-size:13px;font-weight:600;margin-bottom:12px;">Color</p>
+      <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;" id="colorpicker">
+        <div onclick="pickColor(this,'#0b7a4e')" data-color="#0b7a4e" style="width:30px;height:30px;border-radius:50%;background:#0b7a4e;display:flex;align-items:center;justify-content:center;cursor:pointer;outline:2px solid #0b7a4e;outline-offset:2px;"><i class="ti ti-check" style="color:#fff;font-size:14px;"></i></div>
+        <div onclick="pickColor(this,'#6C5CE7')" data-color="#6C5CE7" style="width:30px;height:30px;border-radius:50%;background:#6C5CE7;cursor:pointer;"></div>
+        <div onclick="pickColor(this,'#185FA5')" data-color="#185FA5" style="width:30px;height:30px;border-radius:50%;background:#185FA5;cursor:pointer;"></div>
+        <div onclick="pickColor(this,'#e24b4a')" data-color="#e24b4a" style="width:30px;height:30px;border-radius:50%;background:#e24b4a;cursor:pointer;"></div>
+        <div onclick="pickColor(this,'#ef9f27')" data-color="#ef9f27" style="width:30px;height:30px;border-radius:50%;background:#ef9f27;cursor:pointer;"></div>
+        <div onclick="pickColor(this,'#d4537e')" data-color="#d4537e" style="width:30px;height:30px;border-radius:50%;background:#d4537e;cursor:pointer;"></div>
+        <div onclick="pickColor(this,'#1D9E75')" data-color="#1D9E75" style="width:30px;height:30px;border-radius:50%;background:#1D9E75;cursor:pointer;"></div>
+      </div>
+      <p style="font-size:13px;font-weight:600;margin-bottom:12px;">Icon</p>
+      <div style="display:flex;gap:10px;margin-bottom:30px;flex-wrap:wrap;" id="iconpicker">
+        <div onclick="pickIcon(this)" data-icon="ti-shopping-cart" style="width:44px;height:44px;border-radius:10px;background:#e6f9f0;border:2px solid #0b7a4e;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-shopping-cart" style="font-size:20px;color:#0b7a4e;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-home" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-home" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-bus" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-bus" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-tools-kitchen-2" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-tools-kitchen-2" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-heart" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-heart" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-shirt" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-shirt" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-device-mobile" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-device-mobile" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-school" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-school" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-pig-money" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-pig-money" style="font-size:20px;color:#888;"></i></div>
+        <div onclick="pickIcon(this)" data-icon="ti-device-tv" style="width:44px;height:44px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ti ti-device-tv" style="font-size:20px;color:#888;"></i></div>
+      </div>
+      <button class="btn-primary" onclick="createEnvelope()">Create Envelope</button>
+    </div>
+  </div>
+
+  <!-- ENVELOPE DETAIL -->
+  <div class="screen" id="s-envdetail">
+    <div style="flex-shrink:0;">
+      <div class="page-header">
+        <i class="ti ti-arrow-left" style="font-size:22px;cursor:pointer;" onclick="go('envelopes')"></i>
+        <div style="flex:1;">
+          <p id="detail-name" style="font-size:16px;font-weight:600;"></p>
+          <p id="detail-sub" style="font-size:11px;color:var(--subtext);"></p>
+        </div>
+        <button onclick="openDeleteModal()" style="background:none;border:none;cursor:pointer;padding:4px;">
+          <i class="ti ti-trash" style="font-size:20px;color:var(--red);"></i>
+        </button>
+      </div>
+      <!-- Envelope summary bar -->
+      <div style="padding:14px 16px;border-bottom:0.5px solid var(--border);">
+        <div class="pbar"><div id="detail-bar" class="pfill" style="width:0%;"></div></div>
+        <div style="display:flex;gap:18px;font-size:12px;color:var(--subtext);">
+          <span>Spent <strong id="detail-spent" style="color:var(--text);">₱0</strong></span>
+          <span>Left <strong id="detail-left">₱0</strong></span>
+          <span>Budget <strong style="color:var(--text);" id="detail-budget">₱0</strong></span>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div id="detail-txlist"></div>
+    </div>
+    <div style="padding:14px 16px;flex-shrink:0;border-top:0.5px solid var(--border);">
+      <button class="btn-primary" onclick="openTxModal()"><i class="ti ti-plus"></i> Add Transaction</button>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="s-profile">
+    <div class="scroll-area">
+      <div style="background:var(--purple);padding:36px 16px 52px;text-align:center;">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+          <i class="ti ti-user" style="font-size:36px;color:#fff;"></i>
+        </div>
+        <p id="profile-name" style="font-size:18px;font-weight:600;color:#fff;margin-bottom:4px;">—</p>
+        <p id="profile-email" style="font-size:13px;color:rgba(255,255,255,0.75);">—</p>
+      </div>
+      <div style="margin:-22px 14px 0;background:#fff;border-radius:18px;border:0.5px solid #eee;overflow:hidden;position:relative;z-index:1;">
+        <div class="srow"><div style="display:flex;align-items:center;gap:12px;"><i class="ti ti-currency-peso" style="color:var(--purple);font-size:20px;"></i><span style="font-size:14px;">Currency</span></div><span style="font-size:13px;color:var(--subtext);">PHP ₱</span></div>
+        <div class="srow" onclick="go('help')"><div style="display:flex;align-items:center;gap:12px;"><i class="ti ti-help" style="color:var(--purple);font-size:20px;"></i><span style="font-size:14px;">Help & Support</span></div><i class="ti ti-chevron-right" style="color:#ccc;font-size:16px;"></i></div>
+        <div class="srow" onclick="signOut()"><div style="display:flex;align-items:center;gap:12px;"><i class="ti ti-logout" style="color:var(--red);font-size:20px;"></i><span style="font-size:14px;color:var(--red);">Sign Out</span></div></div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-tab" onclick="go('envelopes')"><i class="ti ti-folders"></i>Envelopes</div>
+      <div class="nav-tab active" onclick="go('profile')"><i class="ti ti-user"></i>Profile</div>
+    </div>
+  </div>
+
+  <!-- HELP -->
+  <div class="screen" id="s-help">
+    <div class="page-header" style="border-bottom:0.5px solid var(--border);">
+      <i class="ti ti-arrow-left" style="font-size:22px;cursor:pointer;" onclick="go('profile')"></i>
+      <p style="font-size:16px;font-weight:600;">Help & Support</p>
+    </div>
+    <div class="scroll-area">
+      <div style="padding:16px 16px 8px;"><p style="font-size:13px;color:var(--subtext);">Frequently asked questions</p></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span>What is an envelope?</span><i class="ti ti-chevron-down" style="font-size:15px;color:#aaa;"></i></div><div class="faq-a">An envelope is a budget category where you set a spending limit for the month. For example, a "Groceries" envelope with a ₱8,000 budget.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span>How do I add a transaction?</span><i class="ti ti-chevron-down" style="font-size:15px;color:#aaa;"></i></div><div class="faq-a">Open an envelope and tap "Add Transaction". Enter the description and amount to record your spending.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span>What does "Overspent" mean?</span><i class="ti ti-chevron-down" style="font-size:15px;color:#aaa;"></i></div><div class="faq-a">Overspent means your spending has exceeded the budget set for that envelope.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span>Can I delete a transaction?</span><i class="ti ti-chevron-down" style="font-size:15px;color:#aaa;"></i></div><div class="faq-a">Yes! Open the envelope and tap the trash icon next to any transaction to delete it.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><span>How do I delete an envelope?</span><i class="ti ti-chevron-down" style="font-size:15px;color:#aaa;"></i></div><div class="faq-a">Open the envelope, tap the trash icon in the top right, and confirm deletion.</div></div>
+      <div style="margin:20px 16px 28px;background:#f5f3ff;border-radius:14px;padding:16px;">
+        <p style="font-size:14px;font-weight:600;color:var(--purple);margin-bottom:6px;">Still need help?</p>
+        <p style="font-size:13px;color:#777;margin-bottom:14px;">Send us a message and we'll get back to you within 24 hours.</p>
+        <button class="btn-primary" style="font-size:14px;padding:12px;">Contact Support</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────
+//  DATA LAYER
+// ─────────────────────────────────────────
+function getUser()       { try { return JSON.parse(localStorage.getItem('ep_user')) || null; } catch(e) { return null; } }
+function saveUser(u)     { localStorage.setItem('ep_user', JSON.stringify(u)); }
+function getEnvelopes()  { try { return JSON.parse(localStorage.getItem('ep_envs')) || []; } catch(e) { return []; } }
+function saveEnvelopes(e){ localStorage.setItem('ep_envs', JSON.stringify(e)); }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ─────────────────────────────────────────
+//  AUTH
+// ─────────────────────────────────────────
+function signUp() {
+  const name     = document.getElementById('signup-name').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirm  = document.getElementById('signup-confirm').value;
+  if (!name)             return alert('Please enter your full name.');
+  if (!email)            return alert('Please enter your email.');
+  if (!password)         return alert('Please enter a password.');
+  if (password !== confirm) return alert('Passwords do not match.');
+  saveUser({ name, email, password });
+  go('dashboard');
+}
+
+function signIn() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const user     = getUser();
+  if (!user)                                    return alert('No account found. Please sign up first.');
+  if (user.email !== email || user.password !== password) return alert('Incorrect email or password.');
+  go('dashboard');
+}
+
+function signOut() { go('login'); }
+
+// ─────────────────────────────────────────
+//  NAVIGATION
+// ─────────────────────────────────────────
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-' + name).classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'envelopes') renderEnvelopes();
+  if (name === 'profile')   renderProfile();
+}
+
+// ─────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────
+function peso(n) {
+  if (n < 0) return '-₱' + Math.abs(n).toLocaleString();
+  return '₱' + n.toLocaleString();
+}
+
+function getStatus(spent, budget) {
+  const pct = budget > 0 ? spent / budget : 0;
+  if (pct >= 1)   return 'overspent';
+  if (pct >= 0.8) return 'caution';
+  return 'ontrack';
+}
+
+function statusTag(status) {
+  if (status === 'overspent') return '<span class="tag tag-red">Overspent</span>';
+  if (status === 'caution')   return '<span class="tag tag-yellow">Caution</span>';
+  return '<span class="tag tag-green">On Track</span>';
+}
+
+function envSpent(env) {
+  return (env.transactions || []).reduce((s, t) => s + t.amount, 0);
+}
+
+function envColor(env) { return env.color || '#6C5CE7'; }
+
+// ─────────────────────────────────────────
+//  DASHBOARD
+// ─────────────────────────────────────────
+function renderDashboard() {
+  const user = getUser();
+  const envs = getEnvelopes();
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning,' : hour < 18 ? 'Good afternoon,' : 'Good evening,';
+  document.getElementById('dash-greeting').textContent = greeting;
+  document.getElementById('dash-name').textContent = user ? user.name.split(' ')[0] : 'there';
+
+  // Month
+  const now = new Date();
+  document.getElementById('dash-month').textContent = '● ' + now.toLocaleString('en-PH', { month: 'long', year: 'numeric' });
+
+  // Totals
+  const totalBudget = envs.reduce((s, e) => s + Number(e.budget), 0);
+  const totalSpent  = envs.reduce((s, e) => s + envSpent(e), 0);
+  const remaining   = totalBudget - totalSpent;
+  const pct         = totalBudget > 0 ? Math.min(100, Math.round(totalSpent / totalBudget * 100)) : 0;
+
+  document.getElementById('dash-budgeted').textContent  = peso(totalBudget);
+  document.getElementById('dash-spent').textContent     = peso(totalSpent);
+  document.getElementById('dash-remaining').textContent = peso(remaining);
+  document.getElementById('dash-pct').textContent       = pct + '% used';
+  document.getElementById('dash-bar').style.width       = pct + '%';
+
+  // Envelope preview (first 3)
+  const list = document.getElementById('dash-envlist');
+  if (envs.length === 0) {
+    list.innerHTML = `<div class="empty-state"><i class="ti ti-folders"></i><p>No envelopes yet.<br>Tap "Add Envelope" to get started!</p></div>`;
+    return;
+  }
+  list.innerHTML = envs.slice(0, 3).map(e => envCardHTML(e)).join('');
+}
+
+// ─────────────────────────────────────────
+//  ENVELOPES LIST
+// ─────────────────────────────────────────
+let currentFilter = 'all';
+
+function renderEnvelopes() {
+  const envs = getEnvelopes();
+  const list = document.getElementById('envlist');
+  if (envs.length === 0) {
+    list.innerHTML = `<div class="empty-state"><i class="ti ti-folders"></i><p>No envelopes yet.<br>Tap "Add Envelope" to create your first one!</p></div>`;
+    return;
+  }
+  list.innerHTML = envs.map(e => envCardHTML(e, true)).join('');
+  filterEnv(currentFilter);
+}
+
+function envCardHTML(env, withFilter = false) {
+  const spent   = envSpent(env);
+  const budget  = Number(env.budget);
+  const left    = budget - spent;
+  const pct     = budget > 0 ? Math.min(100, Math.round(spent / budget * 100)) : 0;
+  const status  = getStatus(spent, budget);
+  const color   = envColor(env);
+  const txCount = (env.transactions || []).length;
+  const leftColor = status === 'ontrack' ? color : status === 'caution' ? 'var(--yellow)' : 'var(--red)';
+  const filterAttr = withFilter ? `data-s="${status}"` : '';
+  return `
+    <div class="env-card" ${filterAttr} onclick="openEnvDetail('${env.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="icon-btn" style="background:${color}22;">
+            <i class="ti ${env.icon || 'ti-wallet'}" style="font-size:17px;color:${color};"></i>
+          </div>
+          <div>
+            <p style="font-size:14px;font-weight:500;">${env.name}</p>
+            <p style="font-size:11px;color:var(--subtext);">${txCount} transaction${txCount !== 1 ? 's' : ''}</p>
+          </div>
+        </div>
+        ${statusTag(status)}
+      </div>
+      <div class="pbar"><div class="pfill" style="background:${color};width:${pct}%;"></div></div>
+      <div style="display:flex;gap:18px;font-size:11px;color:var(--subtext);">
+        <span>Spent <strong style="color:var(--text);">${peso(spent)}</strong></span>
+        <span>Left <strong style="color:${leftColor};">${peso(left)}</strong></span>
+        <span>Budget <strong style="color:var(--text);">${peso(budget)}</strong></span>
+      </div>
+    </div>`;
+}
+
+function filterEnv(f) {
+  currentFilter = f;
+  ['all','ontrack','caution','overspent'].forEach(k => {
+    document.getElementById('f-'+k).className = 'tag tag-outline';
+  });
+  document.getElementById('f-'+f).className = 'tag tag-purple';
+  document.querySelectorAll('#envlist .env-card').forEach(c => {
+    c.style.display = (f === 'all' || c.dataset.s === f) ? '' : 'none';
+  });
+}
+
+// ─────────────────────────────────────────
+//  NEW ENVELOPE
+// ─────────────────────────────────────────
+let selectedColor = '#0b7a4e';
+let selectedIcon  = 'ti-shopping-cart';
+
+function pickColor(el, color) {
+  selectedColor = color;
+  document.querySelectorAll('#colorpicker div').forEach(d => { d.style.outline = 'none'; d.innerHTML = ''; });
+  el.style.outline = '2px solid ' + color;
+  el.style.outlineOffset = '2px';
+  el.innerHTML = '<i class="ti ti-check" style="color:#fff;font-size:14px;"></i>';
+}
+
+function pickIcon(el) {
+  selectedIcon = el.dataset.icon;
+  document.querySelectorAll('#iconpicker div').forEach(d => {
+    d.style.background = '#f5f5f5'; d.style.border = 'none';
+    d.querySelector('i').style.color = '#888';
+  });
+  el.style.background = selectedColor + '22';
+  el.style.border = '2px solid ' + selectedColor;
+  el.querySelector('i').style.color = selectedColor;
+}
+
+function createEnvelope() {
+  const name   = document.getElementById('env-name').value.trim();
+  const budget = parseFloat(document.getElementById('env-budget').value);
+  if (!name)          return alert('Please enter an envelope name.');
+  if (!budget || budget <= 0) return alert('Please enter a valid budget amount.');
+  const envs = getEnvelopes();
+  envs.push({ id: uid(), name, budget, color: selectedColor, icon: selectedIcon, transactions: [] });
+  saveEnvelopes(envs);
+  // Reset form
+  document.getElementById('env-name').value = '';
+  document.getElementById('env-budget').value = '';
+  go('envelopes');
+}
+
+// ─────────────────────────────────────────
+//  ENVELOPE DETAIL
+// ─────────────────────────────────────────
+let currentEnvId = null;
+
+function openEnvDetail(id) {
+  currentEnvId = id;
+  renderDetail();
+  go('envdetail');
+}
+
+function renderDetail() {
+  const envs = getEnvelopes();
+  const env  = envs.find(e => e.id === currentEnvId);
+  if (!env) return;
+
+  const spent  = envSpent(env);
+  const budget = Number(env.budget);
+  const left   = budget - spent;
+  const pct    = budget > 0 ? Math.min(100, Math.round(spent / budget * 100)) : 0;
+  const status = getStatus(spent, budget);
+  const color  = envColor(env);
+  const leftColor = status === 'ontrack' ? color : status === 'caution' ? 'var(--yellow)' : 'var(--red)';
+
+  document.getElementById('detail-name').textContent = env.name;
+  document.getElementById('detail-sub').textContent  = (env.transactions || []).length + ' transactions';
+  document.getElementById('detail-budget').textContent = peso(budget);
+  document.getElementById('detail-spent').textContent  = peso(spent);
+  document.getElementById('detail-left').textContent   = peso(left);
+  document.getElementById('detail-left').style.color   = leftColor;
+  document.getElementById('detail-bar').style.background = color;
+  document.getElementById('detail-bar').style.width      = pct + '%';
+
+  const txList = document.getElementById('detail-txlist');
+  const txs = (env.transactions || []).slice().reverse();
+  if (txs.length === 0) {
+    txList.innerHTML = `<div class="empty-state"><i class="ti ti-receipt"></i><p>No transactions yet.<br>Tap "Add Transaction" to record spending.</p></div>`;
+    return;
+  }
+  txList.innerHTML = txs.map(tx => `
+    <div class="tx-item">
+      <div>
+        <p style="font-size:14px;font-weight:500;">${tx.desc}</p>
+        <p style="font-size:11px;color:var(--subtext);">${new Date(tx.date).toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'})}</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <p style="font-size:15px;font-weight:600;color:var(--red);">-${peso(tx.amount)}</p>
+        <i class="ti ti-trash" style="color:#ccc;font-size:18px;cursor:pointer;" onclick="deleteTransaction('${tx.id}')"></i>
+      </div>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────
+//  TRANSACTIONS
+// ─────────────────────────────────────────
+function openTxModal() {
+  document.getElementById('tx-desc').value = '';
+  document.getElementById('tx-amount').value = '';
+  document.getElementById('modal-tx').classList.add('open');
+  setTimeout(() => document.getElementById('tx-desc').focus(), 100);
+}
+
+function saveTransaction() {
+  const desc   = document.getElementById('tx-desc').value.trim();
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  if (!desc)            return alert('Please enter a description.');
+  if (!amount || amount <= 0) return alert('Please enter a valid amount.');
+  const envs = getEnvelopes();
+  const env  = envs.find(e => e.id === currentEnvId);
+  if (!env) return;
+  if (!env.transactions) env.transactions = [];
+  env.transactions.push({ id: uid(), desc, amount, date: Date.now() });
+  saveEnvelopes(envs);
+  closeModal('modal-tx');
+  renderDetail();
+}
+
+function deleteTransaction(txId) {
+  const envs = getEnvelopes();
+  const env  = envs.find(e => e.id === currentEnvId);
+  if (!env) return;
+  env.transactions = (env.transactions || []).filter(t => t.id !== txId);
+  saveEnvelopes(envs);
+  renderDetail();
+}
+
+// ─────────────────────────────────────────
+//  DELETE ENVELOPE
+// ─────────────────────────────────────────
+function openDeleteModal()  { document.getElementById('modal-del').classList.add('open'); }
+
+function confirmDeleteEnvelope() {
+  const envs = getEnvelopes().filter(e => e.id !== currentEnvId);
+  saveEnvelopes(envs);
+  closeModal('modal-del');
+  go('envelopes');
+}
+
+// ─────────────────────────────────────────
+//  PROFILE
+// ─────────────────────────────────────────
+function renderProfile() {
+  const user = getUser();
+  if (!user) return;
+  document.getElementById('profile-name').textContent  = user.name;
+  document.getElementById('profile-email').textContent = user.email;
+}
+
+// ─────────────────────────────────────────
+//  MODALS & FAQ
+// ─────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function toggleFaq(el) {
+  const ans = el.nextElementSibling;
+  const icon = el.querySelector('i');
+  const isOpen = ans.classList.contains('open');
+  document.querySelectorAll('.faq-a').forEach(a => a.classList.remove('open'));
+  document.querySelectorAll('.faq-q i').forEach(i => i.style.transform = '');
+  if (!isOpen) { ans.classList.add('open'); icon.style.transform = 'rotate(180deg)'; }
+}
+
+// ─────────────────────────────────────────
+//  PWA
+// ─────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('install-banner').classList.remove('show');
+  }
+});
+window.addEventListener('appinstalled', () => document.getElementById('install-banner').classList.remove('show'));
+
+// ─────────────────────────────────────────
+//  INIT — auto-login if user exists
+// ─────────────────────────────────────────
+if (getUser()) go('dashboard');
+</script>
+</body>
+</html>
