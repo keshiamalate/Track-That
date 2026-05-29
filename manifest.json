@@ -1,7 +1,7 @@
 {
-  "name": "EnvelopePH",
-  "short_name": "EnvelopePH",
-  "description": "Envelope budgeting app for Filipinos",
+  "name": "Track That",
+  "short_name": "Track That",
+  "description": "Track. Budget. Grow.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
